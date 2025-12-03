@@ -76,7 +76,7 @@ extension ParsingCommand {
         subcommands: [
             Day1.self,
             Day2.self,
-            // Day3.self,
+            Day3.self,
             // Day4.self,
             // Day5.self,
             // Day6.self,
