@@ -21,13 +21,15 @@ struct Day3: ParsingCommand {
 
         let part1: ManagedAtomic<Int> = .init(0)
         DispatchQueue.concurrentPerform(iterations: batteryBanks.count) {
-            part1.wrappingIncrement(by: batteryBanks[$0][...].battery(length: 2), ordering: .relaxed)
+            var memo = [Int:Int]()
+            part1.wrappingIncrement(by: batteryBanks[$0][...].battery(length: 2, memo: &memo), ordering: .relaxed)
         }
         print("Part 1:", part1.load(ordering: .acquiring))
 
         let part2: ManagedAtomic<Int> = .init(0)
         DispatchQueue.concurrentPerform(iterations: batteryBanks.count) {
-            part2.wrappingIncrement(by: batteryBanks[$0][...].battery(length: 12), ordering: .relaxed)
+            var memo = [Int:Int]()
+            part2.wrappingIncrement(by: batteryBanks[$0][...].battery(length: 12, memo: &memo), ordering: .relaxed)
         }
         print("Part 2:", part2.load(ordering: .acquiring))
 
@@ -36,16 +38,20 @@ struct Day3: ParsingCommand {
 
 extension ArraySlice<Int> {
     /// Returns the highest value battery of length in this array slice.
-    func battery(length: Int) -> Int {
+    func battery(length: Int, memo: inout [Int:Int]) -> Int {
+        let key = self.startIndex * 100 + length
+        if let result = memo[key] { return result }
         guard length > 1 else { return self.max() ?? 0 }
 
         let power = Int(pow(10.0, Double(length - 1)))
         var value = 0
         for first in indices.dropLast(length - 1) {
             if self[first] * power > value {
-                value = self[first] * power + self[(first+1)...].battery(length: length - 1)
+                value = self[first] * power + self[(first+1)...].battery(length: length - 1, memo: &memo)
             }
         }
+
+        memo[key] = value
         return value
     }
 }
