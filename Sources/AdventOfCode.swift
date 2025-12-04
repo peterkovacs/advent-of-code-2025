@@ -18,7 +18,7 @@ extension ParsableCommand {
         return try FileHandle(forReadingFrom: url).readToEnd() ?? Data()
     }
 
-    func grid(file: String) throws -> Grid<Character> {
+    func grid(file: String = #file) throws -> Grid<Character> {
         guard let data = String(data: try read(filename: file), encoding: .utf8)?.split(separator: /\n|\r\n/) else {
             throw ParsingError.invalidInput
         }
@@ -26,7 +26,7 @@ extension ParsableCommand {
         return Grid(data.joined(), size: .init(x: data[0].count, y: data.count))
     }
 
-    func infiniteGrid(_ default: Character, file: String) throws -> InfiniteGrid<Character> {
+    func infiniteGrid(_ default: Character, file: String = #file) throws -> InfiniteGrid<Character> {
         let data = try read(filename: file)
         return infiniteGrid(`default`, lines: String(data: data, encoding: .utf8)?.split(separator: /\n|\r\n/) ?? [])
     }
@@ -77,7 +77,7 @@ extension ParsingCommand {
             Day1.self,
             Day2.self,
             Day3.self,
-            // Day4.self,
+            Day4.self,
             // Day5.self,
             // Day6.self,
             // Day7.self,
