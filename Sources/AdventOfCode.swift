@@ -5,7 +5,7 @@ import Parsing
 extension ParsableCommand {
     func read(filename: String = #file) throws -> Data {
         var filename = filename
-        if let day = filename.firstMatch(of: /Day(\d+)\.swift/) {
+        if let day = filename.firstMatch(of: /Day(\d+)\./) {
             filename = "\(day.1).txt"
         }
 
@@ -79,7 +79,8 @@ extension ParsingCommand {
             Day3.self,
             Day4.self,
             Day5.self,
-            // Day6.self,
+            Day6.self,
+            Day6Part2.self
             // Day7.self,
             // Day8.self,
             // Day9.self,
