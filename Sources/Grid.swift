@@ -11,7 +11,29 @@ public struct Coord: Equatable, Hashable, Sendable {
     self.y = y
   }
 
-  public typealias Direction = (Coord) -> Coord
+  public typealias Direction = KeyPath<Coord, Coord>
+}
+
+extension Coord.Direction {
+    public var right: Coord.Direction {
+        switch self {
+        case \Coord.right: return \Coord.down
+        case \Coord.down: return \Coord.left
+        case \Coord.left: return \Coord.up
+        case \Coord.up: return \Coord.right
+        default: fatalError()
+        }
+    }
+    
+    public var left: Coord.Direction {
+        switch self {
+        case \Coord.right: return \.up
+        case \Coord.up: return \.left
+        case \Coord.left: return \.down
+        case \Coord.down: return \.right
+        default: fatalError()
+        }
+    }
 }
 
 extension Coord {
@@ -28,7 +50,7 @@ extension Coord {
 
 }
 
-#if DEBUG
+//#if DEBUG
 extension KeyPath: @retroactive CustomStringConvertible where Root == Coord, Value == Coord {
     public var description: String {
         switch self {
@@ -40,7 +62,7 @@ extension KeyPath: @retroactive CustomStringConvertible where Root == Coord, Val
         }
     }
 }
-#endif
+//#endif
 
 extension Coord {
   public var adjacent: [Coord] {
@@ -64,6 +86,16 @@ extension Coord: Comparable {
 }
 
 extension Coord {
+    public func direction(to: Coord) -> Coord.Direction? {
+        switch ((to.x - x).signum(), (to.y - y).signum()) {
+        case (1, 0): return \.right
+        case (0, 1): return \.down
+        case (-1, 0): return \.left
+        case (0, -1): return \.up
+        default: return nil
+        }
+    }
+
   public func distance(to: Coord) -> Int {
     Swift.abs(x - to.x) + Swift.abs(y - to.y)
   }
@@ -116,6 +148,56 @@ extension Coord {
     let point = CGPoint(x: x, y: y).applying(transform)
     return .init(x: Int(point.x.rounded(.toNearestOrEven)), y: Int(point.y.rounded(.toNearestOrEven)))
   }
+}
+
+public struct Rect {
+    let origin: Coord
+    let size: Coord
+
+    public init(origin: Coord, size: Coord) {
+        self.origin = origin
+        self.size = size
+    }
+
+    public init(p1: Coord, p2: Coord) {
+        let minX = Swift.min(p1.x, p2.x)
+        let minY = Swift.min(p1.y, p2.y)
+        let maxX = Swift.max(p1.x, p2.x)
+        let maxY = Swift.max(p1.y, p2.y)
+        self.origin = .init(x: minX, y: minY)
+        self.size = .init(x: maxX - minX + 1, y: maxY - minY + 1)
+    }
+
+    func contains(_ point: Coord) -> Bool {
+        return (origin.x..<(origin.x + size.x)).contains(point.x) &&
+        (origin.y..<(origin.y + size.y)).contains(point.y)
+    }
+
+    var area: Int {
+        return size.x * size.y
+    }
+
+    var corners: [Coord] {
+        [
+            origin,
+            .init(x: maxX, y: minY),
+            .init(x: maxX, y: maxY),
+            .init(x: minX, y: maxY)
+        ]
+    }
+
+    var minX: Int {
+        origin.x
+    }
+    var maxX: Int {
+        origin.x + size.x - 1
+    }
+    var minY: Int {
+        origin.y
+    }
+    var maxY: Int {
+        origin.y + size.y - 1
+    }
 }
 
 public struct Grid<Element> {
@@ -189,6 +271,30 @@ public struct Grid<Element> {
       yield &elements[p.y * size.x + p.x]
     }
   }
+
+    public subscript(from origin: Coord, to end: Coord) -> some Sequence<Element> {
+        let x = (end.x - origin.x).signum()
+        let y = (end.y - origin.y).signum()
+        return sequence(state: origin) { state in
+            guard state != end else { return nil }
+
+            defer {
+                state.x += x
+                if x > 0 && state.x > end.x {
+                    state.x = origin.x
+                    state.y += y
+                }
+                else if x < 0 && state.x < end.x {
+                    state.x = origin.x
+                    state.y += y
+                } else if x == 0 {
+                    state.y += y
+                }
+            }
+
+            return self[state]
+        }
+    }
 
     public mutating func swapAt(_ from: Coord, _ to: Coord) {
         let from = from.applying(transform)
@@ -407,3 +513,4 @@ extension Grid: Hashable where Element: Hashable {
     )
   }
 }
+
